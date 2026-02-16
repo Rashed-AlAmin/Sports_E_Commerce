@@ -4,9 +4,9 @@ from backend.routes import (
     test,
     auth,
     product,
-    cart)
+    cart,order)
 from backend.db.base import Base
-from backend.models.user import User
+
 
 app = FastAPI()
 
@@ -18,3 +18,4 @@ app.include_router(auth.router)
 app.include_router(test.router)
 app.include_router(product.router)
 app.include_router(cart.router)
+app.include_router(order.router)
