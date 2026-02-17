@@ -257,7 +257,7 @@ This project is open source and available under the MIT License.
 **[Your Name]**  
 - GitHub: [Rashed-AlAmin](https://github.com/Rashed-AlAmin)
 - LinkedIn: [md-rashed-al-amin](https://www.linkedin.com/in/md-rashed-al-amin/)
-- Email: your.email@example.com
+- Email: rashedalamin4@gmail.com
 
 ---
 
