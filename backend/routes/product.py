@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
 from backend.models.product import Product
 from backend.schemas.product import ProductCreate, ProductResponse
 from backend.core.dependencies import get_db, get_current_admin
@@ -8,77 +10,107 @@ from typing import List
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-# Public - anyone can view
 @router.get("/", response_model=List[ProductResponse])
-def get_products(
+async def get_products(
     skip: int = 0,
     limit: int = 10,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
-    return db.query(Product)\
-        .filter(Product.is_active == True)\
-        .offset(skip)\
-        .limit(limit)\
-        .all()
 
-# Admin only - create product
+    result = await db.execute(
+        select(Product)
+        .where(Product.is_active == True)
+        .offset(skip)
+        .limit(limit)
+    )
+
+    return result.scalars().all()
+
+
 @router.post("/", response_model=ProductResponse)
-def create_product(
+async def create_product(
     product_data: ProductCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin)
 ):
-    new_product = Product(**product_data.dict())
+
+    new_product = Product(**product_data.model_dump())
+
     db.add(new_product)
-    db.commit()
-    db.refresh(new_product)
+
+    await db.commit()
+    await db.refresh(new_product)
+
     return new_product
 
 
-# Admin only - delete product
 @router.delete("/{product_id}")
-def delete_product(
+async def delete_product(
     product_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin)
 ):
-    product = db.query(Product).filter(Product.id == product_id).first()
+
+    result = await db.execute(
+        select(Product).where(Product.id == product_id)
+    )
+
+    product = result.scalar_one_or_none()
+
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(404, "Product not found")
 
     product.is_active = False
-    db.commit()
+
+    await db.commit()
+
     return {"message": "Product deleted"}
 
-#update product
+
 @router.put("/{product_id}", response_model=ProductResponse)
-def update_product(
+async def update_product(
     product_id: str,
     product_data: ProductCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     admin=Depends(get_current_admin)
 ):
-    product = db.query(Product).filter(Product.id == product_id).first()
+
+    result = await db.execute(
+        select(Product).where(Product.id == product_id)
+    )
+
+    product = result.scalar_one_or_none()
+
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(404, "Product not found")
 
     product.name = product_data.name
     product.description = product_data.description
     product.price = product_data.price
 
-    db.commit()
-    db.refresh(product)
+    await db.commit()
+    await db.refresh(product)
+
     return product
 
-#get producti by id
+
 @router.get("/{product_id}", response_model=ProductResponse)
-def get_product(product_id: str, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(
-        Product.id == product_id,
-        Product.is_active == True
-    ).first()
+async def get_product(
+    product_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+
+    result = await db.execute(
+        select(Product)
+        .where(
+            Product.id == product_id,
+            Product.is_active == True
+        )
+    )
+
+    product = result.scalar_one_or_none()
 
     if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
+        raise HTTPException(404, "Product not found")
 
     return product

@@ -1,25 +1,37 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
-# load .env ONCE
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession
+)
+
+from sqlalchemy.orm import sessionmaker
+
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not set")
+# IMPORTANT: change postgres → postgresql+asyncpg
+DATABASE_URL = DATABASE_URL.replace(
+    "postgresql://",
+    "postgresql+asyncpg://"
+)
 
-engine = create_engine(
+engine = create_async_engine(
+
     DATABASE_URL,
+
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=True
 )
 
 SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
+
+    bind=engine,
+
+    class_=AsyncSession,
+
+    expire_on_commit=False
 )

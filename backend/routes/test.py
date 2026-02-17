@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends
 from backend.core.dependencies import get_current_user, get_current_admin
 from backend.models.user import User
+from backend.schemas.user import UserResponse
 
 router = APIRouter()
 
-@router.get("/me")
-def read_current_user(current_user: User = Depends(get_current_user)):
+@router.get("/me", response_model=UserResponse)
+async def read_current_user(current_user: User = Depends(get_current_user)):
     return {
         "id": str(current_user.id),
         "email": current_user.email,
