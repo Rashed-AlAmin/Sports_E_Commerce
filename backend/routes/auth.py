@@ -16,13 +16,18 @@ class UserCreate(BaseModel):
 
 @router.post("/signup", response_model=UserResponse)
 async def signup(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
-    # Async check for existing user
+    # 1. Check if email already exists
     result = await db.execute(select(User).where(User.email == user_data.email))
     existing_user = result.scalars().first()
     
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        # 2. Return a 400 instead of letting the DB throw a 500
+        raise HTTPException(
+            status_code=400, 
+            detail="A user with this email already exists."
+        )
 
+    # 3. If not exists, proceed with creation
     new_user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
@@ -30,11 +35,16 @@ async def signup(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     )
 
     db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
+    
+    try:
+        await db.commit()
+        await db.refresh(new_user)
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Database error during registration")
 
-    return {"message": "User created successfully"}
-
+    return new_user
+    
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     # Async query for user
