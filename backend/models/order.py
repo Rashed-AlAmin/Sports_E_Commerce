@@ -11,7 +11,7 @@ class Order(Base):
     __tablename__ = "orders"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"),index=True)
     total_amount = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
     status = Column(String, default="pending")

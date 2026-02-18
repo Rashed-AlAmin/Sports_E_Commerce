@@ -1,6 +1,8 @@
 import os
+import asyncio
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import  pool
+from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from dotenv import load_dotenv
 from backend.models import CartItem, Order, OrderItem, Product, User, Cart
@@ -44,15 +46,24 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
-    # This section now uses the URL we injected via config.set_main_option above
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+    """Run migrations in 'online' mode using an Async Engine."""
+    
+    # Get the config
+    configuration = config.get_section(config.config_ini_section)
+    
+    # Create an Async Engine
+    connectable = async_engine_from_config(
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
-    with connectable.connect() as connection:
+    async def do_run_migrations():
+        async with connectable.connect() as connection:
+            # We use 'run_sync' because Alembic's migration context is synchronous
+            await connection.run_sync(do_run_migrations_sync)
+
+    def do_run_migrations_sync(connection):
         context.configure(
             connection=connection, 
             target_metadata=target_metadata
@@ -60,6 +71,7 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
+    asyncio.run(do_run_migrations())
 
 if context.is_offline_mode():
     run_migrations_offline()
