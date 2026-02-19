@@ -4,7 +4,7 @@ from backend.routes import (
     test,
     auth,
     product,
-    cart,order)
+    cart,order,categories)
 from backend.db.base import Base
 
 
@@ -25,3 +25,4 @@ app.include_router(test.router)
 app.include_router(product.router)
 app.include_router(cart.router)
 app.include_router(order.router)
+app.include_router(categories.router)
