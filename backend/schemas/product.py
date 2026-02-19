@@ -13,23 +13,26 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     pass 
 
-class ProductResponse(ProductBase):
-    id: UUID
-    is_active: bool
-    # ADD THIS: So the API shows the category_id in the GET response
-    category_id: Optional[int] = None 
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class CategoryBase(BaseModel):
     name: str
 
 class CategoryCreate(CategoryBase):
     pass
 
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+
 class CategoryResponse(CategoryBase):
     id: int
     created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProductResponse(ProductBase):
+    id: UUID
+    is_active: bool
+    category_id: Optional[int] = None
+    # NEW: This nests the category details inside the product response
+    category: Optional[CategoryResponse] = None 
 
     model_config = ConfigDict(from_attributes=True)
